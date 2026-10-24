@@ -38,6 +38,39 @@ class AnswerResponse(Model):
     error: str | None = None
 
 
+class CrawlRequest(Model):
+    request_id: str
+    site: str
+
+
+class CrawlProgress(Model):
+    request_id: str
+    pages_done: int
+    status: str
+
+
+class CrawlResult(Model):
+    request_id: str
+    ready: bool  # there is data to answer from
+    crawled_at: str | None = None
+    used_cache: bool = False  # answering from older data (refresh failed or still running)
+    refreshing: bool = False  # a refresh continues in the background
+    error: str | None = None
+
+
+class FormRequest(Model):
+    question: str
+    language: str = "en"
+    site: str | None = None
+    source_urls: list[str] = []
+
+
+class FormResponse(Model):
+    ok: bool
+    result_json: str = "{}"  # core.forms.checklist() output
+    error: str | None = None
+
+
 # ---- agent construction and Agentverse registration ----
 
 
@@ -132,6 +165,29 @@ def text_of(msg: ChatMessage) -> str:
     return msg.text().strip()
 
 
+async def reply_card(ctx: Context, sender: str, text: str, kind: str, payload: dict, terminal: bool = False) -> None:
+    """ASI Interactive Card (card_protocol_version 1). `text` is shown above the card and must stand on its own,
+    because clients that don't render cards show only the text."""
+    metadata = {
+        "card_protocol_version": "1",
+        "requires_card_interaction": "false" if terminal else "true",
+        "card_kind": kind,
+        "card_payload": json.dumps(payload, ensure_ascii=False),
+    }
+    if terminal:
+        metadata["is_terminal"] = "true"
+    await reply(ctx, sender, text, metadata)
+
+
+def card_selection(text: str) -> dict | None:
+    """Card clicks arrive as a JSON object (direct chat) or as prose (ASI:One planner). Returns the JSON or None."""
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) and data.get("action") else None
+
+
 async def blocking(fn, *args, **kwargs):
     """Run synchronous core code (pymongo, HTTP to Bitdeer/Apify) without blocking the agent event loop."""
     return await asyncio.to_thread(fn, *args, **kwargs)
@@ -151,6 +207,28 @@ LABELS_EN = {
         "Hi! I'm PlainPath. Tell me what you need to do with a government office, in any language, "
         "and I'll give you simple steps from the official website."
     ),
+    "step": "Step",
+    "your_steps": "Your steps",
+    "bring": "Bring",
+    "form": "Form",
+    "checklist": "What to bring and which forms to use",
+    "explain": "Explain",
+    "done": "Done",
+    "form_fields": "What to write on this form",
+    "more_info": "Tell me a bit more so I can find the right official page.",
+    "more_info_title": "What do you need?",
+    "field_service": "What do you need to do? (for example: renew a disabled parking placard)",
+    "field_location": "City or county (optional)",
+    "field_site": "Government website",
+    "field_language": "Answer language",
+    "not_sure": "Not sure",
+    "find_steps": "Find the steps",
+    "not_covered": "I don't have an official website for this yet. I currently cover:",
+    "crawl_started": "The official data is older than one day, so I'm refreshing it from the official website now.",
+    "crawl_progress": "Refreshing the official website: pages read so far",
+    "crawl_continues": "The refresh continues in the background. For now I'm answering from the saved official data from",
+    "crawl_failed": "I couldn't refresh the official website right now. I'm answering from the saved official data from",
+    "no_forms": "No forms or document list were found on the official pages for this.",
 }
 
 
@@ -166,6 +244,25 @@ def day(iso: str | None) -> str:
         return datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(timezone.utc).strftime("%Y-%m-%d")
     except ValueError:
         return iso[:10]
+
+
+def format_checklist(result: dict, language: str) -> str:
+    """Markdown for the Form agent's checklist (documents + explained forms)."""
+    lab = labels(language)
+    if result.get("empty"):
+        return lab["no_forms"]
+    lines = [f"**{lab['checklist']}**"]
+    if result["documents"]:
+        lines.append("")
+        lines += [f"- [ ] {d['text']} ([{lab['source']}]({d['source_url']}))" for d in result["documents"]]
+    for f in result["forms"]:
+        title = f"{f['number']}: {f['name']}" if f.get("number") else f["name"]
+        lines += ["", f"**[{title}]({f['url']})**"]
+        if f.get("purpose"):
+            lines.append(f["purpose"])
+        lines += [f"- *{x['label']}*: {x['explain']}" for x in f.get("fields") or []]
+    lines += ["", f"_{result.get('disclaimer') or core_answer.DISCLAIMER_EN}_"]
+    return "\n".join(lines)
 
 
 def format_answer(result: dict, language: str) -> str:

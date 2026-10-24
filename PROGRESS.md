@@ -10,7 +10,7 @@
 | 6 Q&A endpoint | ✅ |
 | 7 Accessible website | ✅ |
 | 8 Navigator + Answer Agent | 🟡 Code + network path verified; ASI:One UI acceptance pending |
-| 9 Crawler + Form Agent + Cards | ⏳ |
+| 9 Crawler + Form Agent + Cards | 🟡 Flow verified locally + over Agentverse; live crawl demo and ASI:One UI pending |
 | 10 Deployment | ⏳ |
 | 11 README and submission | ⏳ |
 
@@ -147,3 +147,30 @@
 - ASI:One: the agent profile page (`@plainpath`) shows our description; earlier, ASI:One's planner reached the Navigator 3 times (intent logged), which led to fix #41
 
 **Still missing**: completing a Q&A in the ASI:One chat UI. After the fixes, messages typed in the ASI:One chat stay "loading" and never reach the agent (no "chat from" log), while the same mailbox path works from our test agent, so this is a platform-side issue to retest later. Agentverse mailbox polling also shows intermittent 401/503 from Agentverse. Mitigation planned for step 10: public endpoint instead of mailbox polling.
+
+## Step 9: Crawler + Form Agent + Interactive Cards 🟡
+
+**Done**:
+- `backend/app/core/refresh.py`: freshness check, start/join a refresh, progress, finish (WCC -> ingest -> Gov Extractor -> ingest), simulated failure switch
+- `backend/app/core/forms.py`: checklist (documents plus explained forms) from `services`/`forms` with action-specific filtering and language-matched guides
+- `agents/crawler.py` (`@plainpath-crawler`), `agents/form.py` (`@plainpath-forms`): Chat Protocol plus typed protocols (`PlainPathCrawl`, `PlainPathForm`)
+- `agents/navigator.py`: full orchestration with cards (form / carousel / detail), card-click handling (submit_request, open_step, explain_form, done), crawl progress relay, recovery paths
+- `agents/common.py`: card helpers, new messages, localized UI labels; `agents/run_all.py`: Bureau with 4 agents; `agents/local_chat_test.py`: multi-message script with card kinds and escaped non-ASCII input
+
+**Agents** (all registered as Agentverse mailbox agents):
+- Navigator `@plainpath`: agent1qd97m2my59lucx4aryd4x6tvwr9g3mxq8pdpgyj0rvesk0qdcxlvshpejz3
+- Crawler `@plainpath-crawler`: agent1qgv9epq0fl82vwmgjpsm84a0d2xl8ml7wm3rjkxfz57caw8q2hq4qpycqwv
+- Answer `@plainpath-answer`: agent1qf73u7yaea87dcldq0prx4luz4kw6fq8geu38rnuu56clxffxe0cjcwm0j3
+- Form `@plainpath-forms`: agent1q0tltskhqswrthpdtnuy72hxyuaxyu3jcn6ggechsdfu38ttfly6vaxpyu4
+
+**Verification** (local Bureau, `agents/local_chat_test.py`):
+1. "hi" -> self-introduction plus `form` card (service, location, website, language)
+2. Card submit (renew disabled parking placard, Contra Costa, dmv.ca.gov, zh) -> `carousel` card (9 Chinese steps, each with the dpp-renewal link and date) -> `detail` checklist (renewal requirements, REG 195A with 8 explained fields, "Explain REG 195A" CTA)
+3. "Explain REG 195A" click -> purpose plus field explanations
+4. Chinese demo question -> carousel plus checklist (crawler check: fresh, 3.8 h old)
+5. Failure: `CRAWL_MAX_AGE_HOURS=0 CRAWLER_SIMULATE_FAILURE=1` -> Crawler logs the simulated Apify failure; the answer starts with "could not refresh ... saved official data from 2026-10-24" and still returns steps plus checklist
+6. Unrelated (fishing license) -> "not covered, currently: dmv.ca.gov" plus form card
+- Network: `agents/network_chat_test.py` through `agentverse.ai/v2/agents/mailbox/submit` -> DELIVERED, ACK 1.8 s, first answer 6.5 s
+- Backend suite: 28 passed
+
+**Still missing**: (a) one real live refresh to demo crawl progress in chat (paid Apify run, about $0.11, needs approval); (b) the 6-step flow inside the ASI:One UI (blocked by the platform-side "loading" issue from step 8).

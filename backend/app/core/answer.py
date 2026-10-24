@@ -92,7 +92,7 @@ def localized(texts: dict[str, str], language: str | None) -> dict[str, str]:
                 {"role": "system", "content": TRANSLATE_SYSTEM.format(language=language)},
                 {"role": "user", "content": json.dumps(texts, ensure_ascii=False)},
             ],
-            max_tokens=300,
+            max_tokens=min(4000, 200 + 4 * sum(len(v) for v in texts.values())),
         )
         return {k: str(out.get(k) or v) for k, v in texts.items()}
     except Exception as exc:
