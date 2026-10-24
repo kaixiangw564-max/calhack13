@@ -55,13 +55,21 @@ export default function AskPanel() {
   const ttsSupported = useBrowserValue(canSpeak, false);
   const defaultLang = useBrowserValue(browserLanguage, "en");
   const recognitionRef = useRef<Recognition | null>(null);
+  const wantListeningRef = useRef(false);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const langCode = langChoice ?? defaultLang;
   const lang = findLanguage(langCode);
 
-  useEffect(() => () => stopSpeaking(), []);
+  useEffect(
+    () => () => {
+      stopSpeaking();
+      wantListeningRef.current = false;
+      recognitionRef.current?.stop();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (answer) resultsHeadingRef.current?.focus();
@@ -105,39 +113,71 @@ export default function AskPanel() {
     void submit(question);
   }
 
+  // Voice input stops only when the user presses "Stop listening". Browsers still end a recognition
+  // session on long silence or network hiccups, so we restart it and keep what was already recognized.
   function toggleListening() {
     if (listening) {
-      recognitionRef.current?.stop();
+      wantListeningRef.current = false;
+      recognitionRef.current?.stop(); // onend submits the transcript
       return;
     }
     const Ctor = getRecognitionCtor();
     if (!Ctor) return;
+    const joiner = ["zh", "ja"].includes(lang.code) ? "" : " ";
+    let committed = ""; // final text from earlier (auto-restarted) sessions
+    let session = ""; // final text from the current session
     const rec = new Ctor();
     rec.lang = lang.speech;
-    rec.interimResults = false;
+    rec.continuous = true;
+    rec.interimResults = true;
     rec.maxAlternatives = 1;
     rec.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((r) => r[0].transcript)
-        .join(" ")
-        .trim();
-      setQuestion(transcript);
-      void submit(transcript);
+      let finals = "";
+      let interim = "";
+      for (const result of Array.from(event.results)) {
+        if (result.isFinal) finals += result[0].transcript + joiner;
+        else interim += result[0].transcript;
+      }
+      session = finals;
+      setQuestion((committed + session + interim).trim());
     };
     rec.onerror = (event) => {
-      setError(
-        event.error === "not-allowed"
-          ? "Microphone access was blocked. Allow the microphone in your browser, or type your question."
-          : "Sorry, I could not hear that. Please try again or type your question.",
-      );
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        wantListeningRef.current = false;
+        setError("Microphone access was blocked. Allow the microphone in your browser, or type your question.");
+      } else if (event.error === "audio-capture") {
+        wantListeningRef.current = false;
+        setError("No microphone was found. Check your microphone, or type your question.");
+      }
+      // "no-speech", "network", "aborted": onend decides whether to keep listening.
     };
     rec.onend = () => {
+      committed += session;
+      session = "";
+      if (wantListeningRef.current) {
+        try {
+          rec.start();
+          return;
+        } catch {
+          wantListeningRef.current = false;
+        }
+      }
       setListening(false);
       recognitionRef.current = null;
+      const text = committed.trim();
+      if (text) {
+        setQuestion(text);
+        void submit(text);
+      } else {
+        setStatus("");
+        setError((cur) => cur || "Sorry, I could not hear that. Please try again or type your question.");
+      }
     };
     recognitionRef.current = rec;
+    wantListeningRef.current = true;
+    setQuestion("");
     setError("");
-    setStatus("Listening. Say your question now.");
+    setStatus("Listening. Speak your question, then press Stop listening.");
     setListening(true);
     rec.start();
   }
@@ -161,7 +201,8 @@ export default function AskPanel() {
           What do you need to do?
         </label>
         <p id="ask-help" className="text-muted">
-          Ask in any language. Type your question, or press the microphone button and speak.
+          Ask in any language. Type your question, or press &quot;Speak your question&quot;, talk, then press &quot;Stop
+          listening&quot; when you are done.
         </p>
         <textarea
           id="question"

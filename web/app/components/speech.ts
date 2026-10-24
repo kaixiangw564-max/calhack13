@@ -4,6 +4,7 @@ type RecognitionResultEvent = { results: ArrayLike<ArrayLike<{ transcript: strin
 
 export interface Recognition {
   lang: string;
+  continuous: boolean;
   interimResults: boolean;
   maxAlternatives: number;
   start(): void;

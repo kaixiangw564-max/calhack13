@@ -122,4 +122,6 @@
 - axe-core 4.14 (wcag2a/2aa/21a/21aa/22aa + best-practice): **0 violations** on the initial page (42 passes) and on the results page (44 passes), 0 incomplete, including color-contrast
 - `npm run lint` clean, `tsc --noEmit` clean, `npm run build` succeeds; backend suite 28 passed
 
-**Still missing**: voice input not tested with a real microphone (no mic in the automated browser; the button is enabled when the API exists and falls back to typing otherwise).
+**Voice input (manual stop)**: recording runs until the user presses "Stop listening" (continuous recognition with live interim text; if the browser ends a session on silence/network, it restarts and keeps the transcript). Verified with a simulated SpeechRecognition in the built-in browser (auto-restart, transcript accumulation, submit on manual stop, 10-step answer) and by the user with a real microphone in Chrome.
+
+**Still missing**: none.
