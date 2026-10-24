@@ -19,7 +19,8 @@ def urls(results: list[dict]) -> list[str]:
         ("How do I renew my disabled parking placard?", "disabled-person"),
         ("What documents do I need for a REAL ID?", "real-id"),
         ("I moved. How do I change my address with the DMV?", "address"),
-        ("我想续办残疾人停车证", "disabled-person"),  # cross-lingual query against English pages
+        # Cross-lingual query (Chinese: "I want to renew my disabled parking placard") against English pages.
+        ("\u6211\u60f3\u7eed\u529e\u6b8b\u75be\u4eba\u505c\u8f66\u8bc1", "disabled-person"),
     ],
 )
 def test_vector_search_returns_relevant_chunks(question, expected_url_part):
