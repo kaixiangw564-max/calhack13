@@ -10,7 +10,7 @@
 | 6 Q&A endpoint | ✅ |
 | 7 Accessible website | ✅ |
 | 8 Navigator + Answer Agent | 🟡 Code + network path verified; ASI:One UI acceptance pending |
-| 9 Crawler + Form Agent + Cards | 🟡 Flow verified locally + over Agentverse; live crawl demo and ASI:One UI pending |
+| 9 Crawler + Form Agent + Cards | 🟡 Flow + live crawl verified; ASI:One UI acceptance pending |
 | 10 Deployment | ⏳ |
 | 11 README and submission | ⏳ |
 
@@ -173,4 +173,6 @@
 - Network: `agents/network_chat_test.py` through `agentverse.ai/v2/agents/mailbox/submit` -> DELIVERED, ACK 1.8 s, first answer 6.5 s
 - Backend suite: 28 passed
 
-**Still missing**: (a) one real live refresh to demo crawl progress in chat (paid Apify run, about $0.11, needs approval); (b) the 6-step flow inside the ASI:One UI (blocked by the platform-side "loading" issue from step 8).
+**Live refresh** (approved; `CRAWL_MAX_AGE_HOURS=0`, local Bureau, Chinese demo question): the chat received 5 progress messages with real Apify page counts (4, 18, 30, 49, 64 pages), then the carousel answer prefixed with "the refresh continues in the background; answering from saved official data from 2026-10-24", then the checklist. The background refresh finished on its own: WCC 264 pages -> 1,151 page chunks; Gov Extractor 224 records / 147 forms -> 147 form chunks. `sites.last_crawled_at` moved to 2026-10-24T11:20:48Z (fresh), status back to `ready`; only the two new ingest batches remain in `chunks`. Apify spend for the month after the refresh: $0.378. On the refreshed data, the retrieval/ask/crawl/extractor acceptance tests pass (16 passed) and the checklist still picks REG 195A (renew), REG 195 (apply), REG 156 (replace).
+
+**Still missing**: the 6-step flow inside the ASI:One UI (blocked by the platform-side "loading" issue from step 8).

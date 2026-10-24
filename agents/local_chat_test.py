@@ -13,6 +13,7 @@ import sys
 
 os.environ.setdefault("PLAINPATH_SKIP_AGENTVERSE", "1")
 
+import crawler as crawler_module  # noqa: E402
 from answer import agent as answer_agent  # noqa: E402
 from crawler import agent as crawler_agent  # noqa: E402
 from form import agent as form_agent  # noqa: E402
@@ -57,6 +58,10 @@ async def run_script(ctx: Context) -> None:
                 if cards:
                     payload = json.loads(cards[0]["card_payload"])
                     out(f"--- card payload keys: {sorted(payload)} | {json.dumps(payload, ensure_ascii=False)[:600]}")
+        if crawler_module._background:  # a live refresh is still crawling/ingesting: let it finish
+            out(f"\n... waiting for {len(crawler_module._background)} background refresh task(s) to finish")
+            results = await asyncio.gather(*crawler_module._background)
+            out(f"... background refresh finished: {json.dumps(results, default=str)[:800]}")
         os._exit(0)
 
     asyncio.get_running_loop().create_task(driver())
