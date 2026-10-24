@@ -65,7 +65,8 @@ def english_query(question: str) -> str | None:
 def retrieve(question: str, language: str | None, site: str | None) -> list[dict]:
     """Hybrid search on the original question, plus its English rewrite for non-English questions."""
     results = {c["_id"]: c for c in retrieval.search(question, site, TOP_K)}
-    if not is_english(language) or re.search(r"[^\x00-\x7f]", question):
+    # Only rewrite questions not already written in English (the Navigator passes an English restatement).
+    if re.search(r"[^\x00-\x7f]", question):
         rewritten = english_query(question)
         if rewritten:
             for c in retrieval.search(rewritten, site, TOP_K):

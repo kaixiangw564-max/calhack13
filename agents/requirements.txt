@@ -1,0 +1,3 @@
+# Agents import backend/app/core directly, so they need the backend dependencies too.
+-r ../backend/requirements.txt
+uagents==0.26.1

@@ -9,7 +9,7 @@
 | 5 Ingest | ✅ |
 | 6 Q&A endpoint | ✅ |
 | 7 Accessible website | ✅ |
-| 8 Navigator + Answer Agent | ⏳ |
+| 8 Navigator + Answer Agent | 🟡 Code + network path verified; ASI:One UI acceptance pending |
 | 9 Crawler + Form Agent + Cards | ⏳ |
 | 10 Deployment | ⏳ |
 | 11 README and submission | ⏳ |
@@ -125,3 +125,25 @@
 **Voice input (manual stop)**: recording runs until the user presses "Stop listening" (continuous recognition with live interim text; if the browser ends a session on silence/network, it restarts and keeps the transcript). Verified with a simulated SpeechRecognition in the built-in browser (auto-restart, transcript accumulation, submit on manual stop, 10-step answer) and by the user with a real microphone in Chrome.
 
 **Still missing**: none.
+
+## Step 8: Navigator + Answer Agent 🟡
+
+**Done**:
+- `backend/app/core/intent.py`: Bitdeer intent extraction {language, service, location, site, question}
+- `agents/common.py`: agent factory (mailbox, handle, README, description), automatic Agentverse registration via `AGENTVERSE_API_KEY`, chat helpers, typed `AnswerRequest`/`AnswerResponse`, Markdown answer formatting with localized labels, warm-up
+- `agents/answer.py`: Answer Agent (Agent Chat Protocol plus the typed `PlainPathAnswer` protocol)
+- `agents/navigator.py`: Navigator Agent (ASI:One entry; intent, then Answer Agent, then cited Markdown reply; in-process fallback on failure/timeout; per-conversation memory of site/language; timing logs)
+- `agents/run_all.py` (Bureau, port 8001); `agents/readme/*.md` (Agentverse profiles); `agents/local_chat_test.py`, `agents/network_chat_test.py`
+- Agent seeds in `.env` (stable addresses)
+
+**Agents**:
+- PlainPath Navigator `@plainpath`: `agent1qd97m2my59lucx4aryd4x6tvwr9g3mxq8pdpgyj0rvesk0qdcxlvshpejz3`
+- PlainPath Answer `@plainpath-answer`: `agent1qf73u7yaea87dcldq0prx4luz4kw6fq8geu38rnuu56clxffxe0cjcwm0j3`
+
+**Verification**:
+- Local Bureau test (`agents/local_chat_test.py`, Chinese demo question): Navigator replied with Chinese numbered steps, each with a dmv.ca.gov link and check date, plus the REG 195 form link
+- Agentverse: both registered as mailbox agents ("Successfully registered as mailbox agent in Agentverse"); profile read back via the API (name, handle, README, description, starter prompts); Almanac API registration and Chat Protocol manifests published
+- Network path (`agents/network_chat_test.py`): a separate agent sent a ChatMessage through `agentverse.ai/v2/agents/mailbox/submit`, the same inbound path as ASI:One: DELIVERED, ACK after 1.5 s, full cited answer after 7.4 s
+- ASI:One: the agent profile page (`@plainpath`) shows our description; earlier, ASI:One's planner reached the Navigator 3 times (intent logged), which led to fix #41
+
+**Still missing**: completing a Q&A in the ASI:One chat UI. After the fixes, messages typed in the ASI:One chat stay "loading" and never reach the agent (no "chat from" log), while the same mailbox path works from our test agent, so this is a platform-side issue to retest later. Agentverse mailbox polling also shows intermittent 401/503 from Agentverse. Mitigation planned for step 10: public endpoint instead of mailbox polling.
