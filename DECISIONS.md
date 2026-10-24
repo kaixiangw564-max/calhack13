@@ -9,3 +9,6 @@ When a detail is not specified, decisions follow this priority: ① meets the pr
 | 3 | `MAX_PAGES=300` by default, configurable in `.env` | Apify credits are uncertain; 300 pages covers the key DMV services with headroom over the ≥50-page acceptance bar |
 | 4 | The local machine only has Python 3.14, so use `uv venv --python 3.11` for a 3.11 virtualenv | The stack requires 3.11; uagents and its dependencies are more stable on 3.11 |
 | 5 | Agent seeds are stored in `.env` (`*_SEED`) | Agent addresses come from their seeds; fixed seeds keep the Agentverse registration and ASI:One discovery addresses stable |
+| 6 | Bitdeer calls use the official `openai` client with `base_url=https://api-inference.bitdeer.ai/v1` | The official docs (developers.bitdeer.ai/docs/api) state the API is OpenAI-compatible; no custom HTTP code needed. Changing the model only requires editing `.env` |
+| 7 | Chat model is `deepseek-ai/DeepSeek-V4.1-Flash`; embeddings use Bitdeer's `BAAI/bge-m3` (1024-dim) | Picked from what `GET /v1/models` actually returns; bge-m3 is multilingual, so Chinese questions match English DMV pages directly, and embeddings also count toward Model Studio usage |
+| 8 | `config.py` loads the repo-root `.env` centrally | The backend, agents and tests share one config, and nothing depends on the current working directory |
