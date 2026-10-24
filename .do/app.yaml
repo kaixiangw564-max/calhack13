@@ -1,0 +1,84 @@
+# DigitalOcean App Platform spec for PlainPath.
+# SECRET values are intentionally empty here: scripts/deploy_do.py fills them from the local .env at deploy time,
+# and App Platform stores them encrypted. Never put secret values in this file (the repo is public).
+name: plainpath
+region: sfo
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /backend
+      component:
+        name: api
+    - match:
+        path:
+          prefix: /
+      component:
+        name: web
+
+services:
+  - name: api
+    github: &repo
+      repo: kaixiangw564-max/calhack13
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    dockerfile_path: backend/Dockerfile
+    http_port: 8080
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+    envs: &core_envs
+      - {key: MONGODB_URI, scope: RUN_TIME, type: SECRET}
+      - {key: MONGODB_DB, value: plainpath, scope: RUN_TIME}
+      - {key: BITDEER_API_KEY, scope: RUN_TIME, type: SECRET}
+      - {key: BITDEER_BASE_URL, value: "https://api-inference.bitdeer.ai/v1", scope: RUN_TIME}
+      - {key: BITDEER_CHAT_MODEL, value: deepseek-ai/DeepSeek-V4.1-Flash, scope: RUN_TIME}
+      - {key: EMBEDDING_MODEL, value: BAAI/bge-m3, scope: RUN_TIME}
+      - {key: BITDEER_REASONING_EFFORT, value: none, scope: RUN_TIME}
+      - {key: APIFY_TOKEN, scope: RUN_TIME, type: SECRET}
+      - {key: APIFY_ACTOR_ID, value: kaikeru/plainpath-gov-extractor, scope: RUN_TIME}
+      - {key: TARGET_START_URL, value: "https://www.dmv.ca.gov/portal/", scope: RUN_TIME}
+      - {key: MAX_PAGES, value: "300", scope: RUN_TIME}
+      - {key: APIFY_WEBHOOK_SECRET, scope: RUN_TIME, type: SECRET}
+      # Public base URL of this API, used for Apify run webhooks (POST /crawl -> /webhook/apify).
+      - {key: BACKEND_PUBLIC_URL, value: "${APP_URL}/backend", scope: RUN_TIME}
+
+  - name: web
+    github: *repo
+    source_dir: /web
+    dockerfile_path: web/Dockerfile
+    http_port: 8080
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    envs:
+      - {key: BACKEND_URL, value: "${api.PRIVATE_URL}", scope: RUN_TIME}
+
+workers:
+  - name: agents
+    github: *repo
+    source_dir: /
+    dockerfile_path: agents/Dockerfile
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    envs:
+      - {key: MONGODB_URI, scope: RUN_TIME, type: SECRET}
+      - {key: MONGODB_DB, value: plainpath, scope: RUN_TIME}
+      - {key: BITDEER_API_KEY, scope: RUN_TIME, type: SECRET}
+      - {key: BITDEER_BASE_URL, value: "https://api-inference.bitdeer.ai/v1", scope: RUN_TIME}
+      - {key: BITDEER_CHAT_MODEL, value: deepseek-ai/DeepSeek-V4.1-Flash, scope: RUN_TIME}
+      - {key: EMBEDDING_MODEL, value: BAAI/bge-m3, scope: RUN_TIME}
+      - {key: BITDEER_REASONING_EFFORT, value: none, scope: RUN_TIME}
+      - {key: APIFY_TOKEN, scope: RUN_TIME, type: SECRET}
+      - {key: APIFY_ACTOR_ID, value: kaikeru/plainpath-gov-extractor, scope: RUN_TIME}
+      - {key: TARGET_START_URL, value: "https://www.dmv.ca.gov/portal/", scope: RUN_TIME}
+      - {key: MAX_PAGES, value: "300", scope: RUN_TIME}
+      - {key: AGENTVERSE_API_KEY, scope: RUN_TIME, type: SECRET}
+      - {key: NAVIGATOR_SEED, scope: RUN_TIME, type: SECRET}
+      - {key: CRAWLER_SEED, scope: RUN_TIME, type: SECRET}
+      - {key: ANSWER_SEED, scope: RUN_TIME, type: SECRET}
+      - {key: FORM_SEED, scope: RUN_TIME, type: SECRET}
+      - {key: CRAWL_MAX_AGE_HOURS, value: "24", scope: RUN_TIME}

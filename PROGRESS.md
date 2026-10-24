@@ -11,8 +11,8 @@
 | 7 Accessible website | ✅ |
 | 8 Navigator + Answer Agent | 🟡 Code + network path verified; ASI:One UI acceptance pending |
 | 9 Crawler + Form Agent + Cards | 🟡 Flow + live crawl verified; ASI:One UI acceptance pending |
-| 10 Deployment | ⏳ |
-| 11 README and submission | ⏳ |
+| 10 Deployment | 🟡 Deploy-ready, not deployed (team decision: local demo) |
+| 11 README and submission | ✅ README; Devpost / ASI:One submission by the team |
 
 ---
 
@@ -176,3 +176,29 @@
 **Live refresh** (approved; `CRAWL_MAX_AGE_HOURS=0`, local Bureau, Chinese demo question): the chat received 5 progress messages with real Apify page counts (4, 18, 30, 49, 64 pages), then the carousel answer prefixed with "the refresh continues in the background; answering from saved official data from 2026-10-24", then the checklist. The background refresh finished on its own: WCC 264 pages -> 1,151 page chunks; Gov Extractor 224 records / 147 forms -> 147 form chunks. `sites.last_crawled_at` moved to 2026-10-24T11:20:48Z (fresh), status back to `ready`; only the two new ingest batches remain in `chunks`. Apify spend for the month after the refresh: $0.378. On the refreshed data, the retrieval/ask/crawl/extractor acceptance tests pass (16 passed) and the checklist still picks REG 195A (renew), REG 195 (apply), REG 156 (replace).
 
 **Still missing**: the 6-step flow inside the ASI:One UI (blocked by the platform-side "loading" issue from step 8).
+
+## Step 10: Deployment 🟡 (deploy-ready, not deployed)
+
+**Done**: `backend/Dockerfile`, `web/Dockerfile`, `agents/Dockerfile`, `.dockerignore` files, `.do/app.yaml` (App Platform:
+services `api` + `web`, worker `agents`, ingress `/backend` -> api, `/` -> web, website -> API via `${api.PRIVATE_URL}`,
+secrets as `type: SECRET` without values), `scripts/deploy_do.py` (fills secrets from `.env`, then propose/create/update via the
+DigitalOcean Apps API; `--dry-run` prints the redacted spec), `scripts/run_local.py` (one-command local demo).
+
+**Verification**: `scripts/deploy_do.py --dry-run` builds the full spec from `.env` with no missing secrets. Docker is not
+installed locally, so images were not built; the Dockerfiles use the same commands that run locally.
+
+**Not done (team decision)**: no DigitalOcean credit is available and DigitalOcean requires a payment method, so the app was
+not created. The demo runs locally; the agents are online through Agentverse mailboxes while `scripts/run_local.py` runs.
+The MLH DigitalOcean requirement and "keeps running after the event" are therefore not met (see DECISIONS #49-51).
+
+## Step 11: README and submission ✅
+
+**Done**: `README.md` (English): demo walkthrough (ASI:One 6-step flow, website, 3-minute script), architecture diagram and answer
+pipeline, local setup and run steps, configuration reference, API, agent list with addresses, a requirement-by-requirement
+prize table with honest status, "How we use Bitdeer AI Model Studio", "How we use Apify", accessibility, guardrails, testing,
+deployment and known limitations.
+
+**Verification**: backend 28 passed, actor 8 passed, web lint + `tsc --noEmit` clean.
+
+**Still missing (team)**: push to the public GitHub repo (after a full-history secret scan), Devpost submission, ASI:One / Cal Hacks
+agent registration form, demo video; ASI:One UI acceptance of the main flow when the platform delivers messages again.

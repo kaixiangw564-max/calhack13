@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/storage
+*_data.json
+web/.next
+actor
+.claude
