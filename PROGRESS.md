@@ -7,7 +7,7 @@
 | 3 Full-site crawl | ✅ |
 | 4 Custom Actor | ✅ (Store publishing pending: human) |
 | 5 Ingest | ✅ |
-| 6 Q&A endpoint | ⏳ |
+| 6 Q&A endpoint | ✅ |
 | 7 Accessible website | ⏳ |
 | 8 Navigator + Answer Agent | ⏳ |
 | 9 Crawler + Form Agent + Cards | ⏳ |
@@ -90,3 +90,20 @@
 - Full backend suite: 22 passed
 
 **Still missing**: webhook not yet exercised end-to-end by Apify (needs the public backend URL from step 10; until then ingest runs via the script).
+
+## Step 6: Q&A endpoint ✅
+
+**Done**:
+- `backend/app/core/answer.py`: `ask(question, language, site)` does hybrid retrieval (plus an English rewrite for non-English questions), applies the score gate, has Bitdeer produce grounded JSON (steps/documents/forms with excerpt citations), maps citations to `source_url`/`crawled_at`, resolves forms from the `forms` collection, and adds a localized disclaimer. The not_found path returns a localized message plus the site's contact page
+- `backend/app/core/llm.py`: `reasoning_effort` (default `none`); clear error when the model hits max_tokens with no answer
+- `backend/app/main.py`: `POST /ask`, `POST /crawl`, `GET /crawl/{run_id}` (with pydantic validation)
+- `backend/tests/test_ask.py`: acceptance tests (Chinese questions as Unicode escapes; the file is ASCII-only)
+
+**Verification**: `cd backend && ../.venv/Scripts/python -m pytest tests/test_ask.py`: 6 passed
+- 3 Chinese questions (renew disabled placard, REAL ID documents, change of address): every step is in Chinese, has a `https://www.dmv.ca.gov/` `source_url` and a `crawled_at`, the sources include the expected page (dpp-renewal / real-id / change-of-address), and there are no leftover `[n]` markers
+- Unrelated question (California fishing license): `not_found: true`, Chinese message, contact page `contacting-dmv`
+- "What is form REG 195 used for?": forms include REG 195 with its official PDF link
+- Manual review: answers are short and plain, restate the official text (e.g. REAL ID: identity proof, name-change docs, 2 residency proofs, SSN, in-person visit). About 10 s per answer; not-found takes about 2 s
+- Full backend suite: 28 passed
+
+**Still missing**: none for step 6. Known nit: the REAL ID answer can list related unnumbered PDFs (e.g. a translated fact sheet) as forms; to refine in the Form agent (step 9).

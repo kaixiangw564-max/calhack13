@@ -26,15 +26,32 @@ def chat_model() -> str:
     return env("BITDEER_CHAT_MODEL", required=True)
 
 
-def chat(messages: list[dict], *, temperature: float = 0.2, max_tokens: int = 1200, model: str | None = None) -> str:
+def reasoning_effort() -> str:
+    # DeepSeek-V4.x on Bitdeer is a reasoning model; "none" disables thinking (verified: 0 reasoning tokens),
+    # which is right for grounded rewriting/translation and keeps max_tokens for the actual answer.
+    return env("BITDEER_REASONING_EFFORT", "none")
+
+
+def chat(
+    messages: list[dict],
+    *,
+    temperature: float = 0.2,
+    max_tokens: int = 1200,
+    model: str | None = None,
+    effort: str | None = None,
+) -> str:
     """Plain chat completion; returns the assistant text."""
     resp = client().chat.completions.create(
         model=model or chat_model(),
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
+        reasoning_effort=effort or reasoning_effort(),
     )
-    return resp.choices[0].message.content or ""
+    choice = resp.choices[0]
+    if not choice.message.content and choice.finish_reason == "length":
+        raise ValueError(f"LLM hit max_tokens={max_tokens} before producing an answer")
+    return choice.message.content or ""
 
 
 def chat_json(messages: list[dict], **kw) -> dict:

@@ -3,17 +3,50 @@ import hmac
 import logging
 
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
 
-from .core import crawl, ingest
+from .core import answer, crawl, ingest
 from .core.config import env
 
 log = logging.getLogger("plainpath")
 app = FastAPI(title="PlainPath API")
 
 
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    language: str = "en"
+    site: str | None = None
+
+
+class CrawlRequest(BaseModel):
+    start_url: str
+    max_pages: int = Field(default=300, ge=1, le=1000)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
+
+
+@app.post("/ask")
+def ask(req: AskRequest) -> dict:
+    """{steps: [{text, source_url, crawled_at}], documents, forms, not_found, disclaimer}."""
+    return answer.ask(req.question, req.language, req.site)
+
+
+@app.post("/crawl")
+def start_crawl(req: CrawlRequest) -> dict:
+    """Start an Apify Website Content Crawler run (ingest happens via the webhook)."""
+    started = crawl.start_crawl(req.start_url, req.max_pages)
+    return {"run_id": started["run_id"], "status": started["status"]}
+
+
+@app.get("/crawl/{run_id}")
+def crawl_status(run_id: str) -> dict:
+    status = crawl.get_status(run_id)
+    if status["status"] == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail="run not found")
+    return {"status": status["status"], "pages_done": status["pages_done"]}
 
 
 def _ingest_run(actor_id: str, run_id: str, dataset_id: str) -> None:
