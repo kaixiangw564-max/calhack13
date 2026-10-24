@@ -95,6 +95,7 @@ def make_agent(name: str, seed_env: str, handle: str, description: str, readme: 
 
 
 WARM_LANGUAGES = ("en", "zh", "es", "vi", "ko", "tl", "ru", "ar")
+REGISTRATION_RETRY_DELAYS_S = (5, 15, 0)  # wait after attempts 1 and 2; attempt 3 is the last
 
 
 def warm_up() -> None:
@@ -134,17 +135,31 @@ async def register_agent(agent: Agent, ctx: Context, starter_prompts: list[str])
         protocols=list(agent.protocols.keys()),
         metadata=agent.metadata,
     )
-    result = await register_in_agentverse(
-        request=AgentverseConnectRequest(user_token=token, agent_type="mailbox"),
-        identity=agent._identity,
-        prefix=agent._prefix,
-        agentverse=agent._agentverse,
-        agent_details=details,
+    # Agentverse occasionally answers 401/503 right at startup; retry before giving up.
+    detail = None
+    for attempt, delay in enumerate(REGISTRATION_RETRY_DELAYS_S, start=1):
+        try:
+            result = await register_in_agentverse(
+                request=AgentverseConnectRequest(user_token=token, agent_type="mailbox"),
+                identity=agent._identity,
+                prefix=agent._prefix,
+                agentverse=agent._agentverse,
+                agent_details=details,
+            )
+            if result.success:
+                ctx.logger.info(f"Registered in Agentverse as mailbox agent {agent.address}")
+                return
+            detail = result.detail
+        except Exception as exc:  # network errors, non-JSON error bodies
+            detail = f"{type(exc).__name__}: {exc}"
+        if delay:
+            ctx.logger.info(f"Agentverse registration attempt {attempt} failed ({detail}); retrying in {delay}s")
+            await asyncio.sleep(delay)
+    # Registration only refreshes the profile; an earlier registration keeps the mailbox working.
+    ctx.logger.warning(
+        f"Agentverse registration failed after {len(REGISTRATION_RETRY_DELAYS_S)} attempts ({detail}). "
+        "The existing registration stays active; restart later to refresh the profile."
     )
-    if result.success:
-        ctx.logger.info(f"Registered in Agentverse as mailbox agent {agent.address}")
-    else:
-        ctx.logger.error(f"Agentverse registration failed: {result.detail}")
 
 
 # ---- chat helpers ----
