@@ -2,6 +2,7 @@
 
 Full-site page text comes from Apify's Website Content Crawler (WCC).
 """
+import json
 import re
 from datetime import timedelta
 from functools import lru_cache
@@ -48,11 +49,26 @@ def _status(run) -> str:
     return str(getattr(run.status, "value", run.status))
 
 
-def start_crawl(start_url: str, max_pages: int, webhook_url: str | None = None) -> dict:
+WEBHOOK_SECRET_HEADER = "X-PlainPath-Webhook-Secret"
+
+
+def ingest_webhooks() -> list[dict] | None:
+    """Ad-hoc webhook that calls POST /webhook/apify when a run succeeds (needs a public BACKEND_PUBLIC_URL)."""
+    base, secret = env("BACKEND_PUBLIC_URL"), env("APIFY_WEBHOOK_SECRET")
+    if not base or not secret or "localhost" in base or "127.0.0.1" in base:
+        return None
+    return [
+        {
+            "event_types": ["ACTOR.RUN.SUCCEEDED"],
+            "request_url": base.rstrip("/") + "/webhook/apify",
+            "headers_template": json.dumps({WEBHOOK_SECRET_HEADER: secret}),
+        }
+    ]
+
+
+def start_crawl(start_url: str, max_pages: int) -> dict:
     """Start a WCC run without waiting. Returns {run_id, status, dataset_id}."""
-    webhooks = None
-    if webhook_url:
-        webhooks = [{"event_types": ["ACTOR.RUN.SUCCEEDED"], "request_url": webhook_url}]
+    webhooks = ingest_webhooks()
     run = client().actor(WCC_ACTOR).start(
         run_input=wcc_input(start_url, max_pages),
         memory_mbytes=2048,
@@ -118,8 +134,15 @@ def start_extractor(start_urls: list[str], max_crawl_depth: int | None = 0, max_
         },
         memory_mbytes=2048,
         run_timeout=timedelta(minutes=30),
+        webhooks=ingest_webhooks(),
     )
     return {"run_id": run.id, "status": _status(run), "dataset_id": run.default_dataset_id}
+
+
+def actor_full_name(actor_id: str) -> str | None:
+    """'aYG0l9s7dbB7j3gbS' -> 'apify/website-content-crawler'."""
+    actor = client().actor(actor_id).get()
+    return f"{actor.username}/{actor.name}" if actor else None
 
 
 def latest_succeeded_run(actor_id: str = WCC_ACTOR) -> dict | None:

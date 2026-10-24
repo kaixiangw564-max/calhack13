@@ -6,7 +6,7 @@
 | 2 Bitdeer calls | ✅ |
 | 3 Full-site crawl | ✅ |
 | 4 Custom Actor | ✅ (Store publishing pending: human) |
-| 5 Ingest | ⏳ |
+| 5 Ingest | ✅ |
 | 6 Q&A endpoint | ⏳ |
 | 7 Accessible website | ⏳ |
 | 8 Navigator + Answer Agent | ⏳ |
@@ -71,3 +71,22 @@
 **Output schema (for Store publication)**: added `.actor/output_schema.json` (`results` -> default dataset items) and a field-level JSON Schema in `dataset_schema.json`; validated with the CLI's official validators (actor/output/dataset) and AJV against all 257 platform items + fixture items. Build **0.1.4** SUCCEEDED; no Actor run started (run count 3 before and after push).
 
 **Still missing (human)**: publish the Actor publicly on Apify Store (Console → Actor → Publication). Known small issue: PDFs over 15 MB are fully downloaded before being marked `too_large` (2 files).
+
+## Step 5: Ingest ✅
+
+**Done**:
+- `backend/app/core/db.py`: Atlas client, regular indexes, and the Vector Search index `chunks_vector` (1024-dim cosine, filters `site` and `kind`); waits until queryable
+- `backend/app/core/ingest.py`: WCC pages become heading-based chunks (title prefix, links stripped, www/non-www deduped, site title suffix removed). Extractor records are written to `services`; each unique form goes to `forms` plus one form chunk (number, name, official PDF URL, services, source pages, first-page instructions, field labels). `sites` is updated. Idempotent re-ingest
+- `backend/app/core/retrieval.py`: `vector_search()` (`$vectorSearch` + score), `exact_form_chunks()` (form-number match), `search()` (hybrid, top 8)
+- `backend/app/main.py`: `GET /health`, `POST /webhook/apify` (shared-secret header, background ingest)
+- `backend/app/core/crawl.py`: both Actor starts attach the ingest webhook when `BACKEND_PUBLIC_URL` is public
+- `backend/scripts/run_ingest.py`: ingests the latest successful runs (same code as the webhook)
+- `.env.example`: `APIFY_WEBHOOK_SECRET`; requirements: `pymongo[srv]`
+
+**Verification**:
+- `python -m scripts.run_ingest`: 270 pages, 1,245 page chunks; 257 extractor records (256 unique services), 168 forms, 168 form chunks; index `chunks_vector` READY/queryable
+- `pytest tests/test_retrieval.py`: 6 passed against Atlas. Placard-renewal (English and Chinese), REAL ID documents and change-of-address queries hit the right pages in the top 5; "What is form REG 195?" returns the REG 195 form chunk first (exact match); "Which form do I fill out to apply for a disabled person placard?" finds REG 195 among form chunks
+- `pytest tests/test_ingest_unit.py`: 9 passed (offline: chunking, form numbers, URL canonicalization, title suffix, webhook auth, /health)
+- Full backend suite: 22 passed
+
+**Still missing**: webhook not yet exercised end-to-end by Apify (needs the public backend URL from step 10; until then ingest runs via the script).
