@@ -1,0 +1,18 @@
+{
+	"$schema": "https://apify.com/schemas/v1/actor.ide.json",
+	"actorSpecification": 1,
+	"name": "plainpath-gov-extractor",
+	"title": "PlainPath Gov Extractor",
+	"description": "Turns public government service websites into structured, citeable records: step-by-step instructions, required documents, PDF forms (with field names), mailing addresses, offices, and fees. Respects robots.txt.",
+	"version": "0.1",
+	"buildTag": "latest",
+	"meta": {
+		"templateId": "python-crawlee-beautifulsoup"
+	},
+	"input": "./input_schema.json",
+	"storages": {
+		"dataset": "./dataset_schema.json"
+	},
+	"readme": "../README.md",
+	"dockerfile": "../Dockerfile"
+}

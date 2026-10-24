@@ -2,6 +2,7 @@
 
 Full-site page text comes from Apify's Website Content Crawler (WCC).
 """
+import re
 from datetime import timedelta
 from functools import lru_cache
 from typing import Iterator
@@ -80,9 +81,50 @@ def wait_for_run(run_id: str) -> dict:
     return get_status(run_id)
 
 
-def latest_succeeded_run() -> dict | None:
-    """Most recent successful WCC run on this account: {run_id, dataset_id, finished_at}."""
-    run = client().actor(WCC_ACTOR).last_run(status="SUCCEEDED").get()
+def extractor_actor_id() -> str:
+    return env("APIFY_ACTOR_ID", required=True)
+
+
+_SERVICE_HEADING_RE = re.compile(
+    r"^#{1,4}\s*(apply|applying|renew|renewing|replace|replacing|how (do|to|can)|register|request|change|update|"
+    r"transfer|what (you|to) (need|bring)|required|documents|checklist|eligib)",
+    re.I | re.M,
+)
+_FORM_LINK_RE = re.compile(r"\]\([^)]*(/file/|\.pdf)[^)]*\)|\(PDF\)", re.I)
+
+
+def service_page_urls(wcc_dataset_id: str) -> list[str]:
+    """Pages from a Website Content Crawler dataset that look like service pages (form links or how-to headings)."""
+    urls: list[str] = []
+    for page in iter_pages(wcc_dataset_id):
+        if _FORM_LINK_RE.search(page["markdown"]) or _SERVICE_HEADING_RE.search(page["markdown"]):
+            if page["url"] not in urls:
+                urls.append(page["url"])
+    return urls
+
+
+def start_extractor(start_urls: list[str], max_crawl_depth: int | None = 0, max_pdfs: int = 200) -> dict:
+    """Start our custom Actor (PlainPath Gov Extractor). Returns {run_id, status, dataset_id}.
+
+    Default pipeline: Website Content Crawler finds every page, then the extractor processes only
+    the service pages it found (max_crawl_depth=0), so no budget is spent re-discovering the site.
+    """
+    run = client().actor(extractor_actor_id()).start(
+        run_input={
+            "startUrls": [{"url": u} for u in start_urls],
+            "maxPagesPerCrawl": len(start_urls) if max_crawl_depth == 0 else 400,
+            "maxCrawlDepth": max_crawl_depth,
+            "maxPdfs": max_pdfs,
+        },
+        memory_mbytes=2048,
+        run_timeout=timedelta(minutes=30),
+    )
+    return {"run_id": run.id, "status": _status(run), "dataset_id": run.default_dataset_id}
+
+
+def latest_succeeded_run(actor_id: str = WCC_ACTOR) -> dict | None:
+    """Most recent successful run of an Actor on this account: {run_id, dataset_id, finished_at}."""
+    run = client().actor(actor_id).last_run(status="SUCCEEDED").get()
     if run is None:
         return None
     return {"run_id": run.id, "dataset_id": run.default_dataset_id, "finished_at": run.finished_at}

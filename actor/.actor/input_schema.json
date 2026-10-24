@@ -1,0 +1,59 @@
+{
+    "$schema": "https://apify.com/schemas/v1/input.ide.json",
+    "title": "PlainPath Gov Extractor input",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "startUrls": {
+            "title": "Start URLs",
+            "type": "array",
+            "description": "Public government site pages to start from. The crawler stays on the same domain and always respects robots.txt.",
+            "editor": "requestListSources",
+            "prefill": [{ "url": "https://www.dmv.ca.gov/portal/" }]
+        },
+        "maxPagesPerCrawl": {
+            "title": "Max pages",
+            "type": "integer",
+            "description": "Maximum number of HTML pages to visit.",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 5000
+        },
+        "maxCrawlDepth": {
+            "title": "Max crawl depth",
+            "type": "integer",
+            "description": "How many links deep to follow from the start URLs. 0 = process only the start URLs (useful when you already have a list of service pages, e.g. from Website Content Crawler). Empty = unlimited.",
+            "minimum": 0
+        },
+        "extractPdfFields": {
+            "title": "Extract PDF form fields",
+            "type": "boolean",
+            "description": "Download linked PDF forms (only when robots.txt allows) and extract their fillable field names and first-page text.",
+            "default": true
+        },
+        "maxPdfs": {
+            "title": "Max PDFs",
+            "type": "integer",
+            "description": "Maximum number of PDF forms to download and parse.",
+            "default": 150,
+            "minimum": 0
+        },
+        "excludeUrlGlobs": {
+            "title": "Exclude URL globs",
+            "type": "array",
+            "description": "Links matching these globs are not crawled as pages (PDF form links are still recorded).",
+            "editor": "stringList",
+            "default": [
+                "**/wp-content/**",
+                "**/wp-admin/**",
+                "**/file/**",
+                "**/uploads/**",
+                "**/feed/**",
+                "**/*?s=*",
+                "**/news-and-media/**",
+                "**/dmv-research-reports/**"
+            ]
+        }
+    },
+    "required": ["startUrls"]
+}

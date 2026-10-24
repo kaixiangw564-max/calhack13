@@ -1,0 +1,24 @@
+{
+    "$schema": "https://apify.com/schemas/v1/dataset.ide.json",
+    "actorSpecification": 1,
+    "fields": {},
+    "views": {
+        "overview": {
+            "title": "Service records",
+            "transformation": {
+                "fields": ["service", "url", "required_documents", "forms", "fees", "crawled_at"]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "service": { "label": "Service", "format": "text" },
+                    "url": { "label": "Source page", "format": "link" },
+                    "required_documents": { "label": "Required documents", "format": "array" },
+                    "forms": { "label": "Forms", "format": "array" },
+                    "fees": { "label": "Fees", "format": "text" },
+                    "crawled_at": { "label": "Crawled at", "format": "date" }
+                }
+            }
+        }
+    }
+}
