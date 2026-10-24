@@ -269,7 +269,7 @@ Status: ✅ done and verified · 🟡 done, verification pending · ❌ not met
 | | Discoverable and usable from ASI:One | Navigator profile `@plainpath` is visible in ASI:One; the inbound path ASI:One uses (Agentverse mailbox) is verified end to end (ACK 1.8 s, answer 6.5 s). Completing a chat inside the ASI:One UI is pending: during our tests ASI:One messages stayed "loading" and never reached the mailbox | 🟡 |
 | | Real tool calls / multi-agent orchestration, not a wrapper | Navigator orchestrates Crawler (Apify runs, MongoDB), Answer (vector search plus grounded generation) and Form (Actor records plus PDF fields); typed inter-agent protocols | ✅ |
 | | Main flow fully inside the ASI:One chat | Form card, live crawl progress, carousel, checklist, "Explain form" clicks: no custom front end needed (verified with chat-protocol clients; UI run pending as above) | 🟡 |
-| | Public GitHub repo with run instructions | This repository and the [Running locally](#running-locally) section | ✅ (after push) |
+| | Public GitHub repo with run instructions | [github.com/kaixiangw564-max/calhack13](https://github.com/kaixiangw564-max/calhack13) (public) and the [Running locally](#running-locally) section | ✅ |
 | Fetch.ai bonus | Multi-agent collaboration | 4 agents with distinct roles | ✅ |
 | | ASI Interactive Cards | `form`, `carousel`, `detail` (checklist) cards with CTAs and click handling | ✅ |
 | | Recovery after tool failure | Apify failure, so cached data with its date; agent timeout, so in-process pipeline; no data, so "not found" plus contact | ✅ |

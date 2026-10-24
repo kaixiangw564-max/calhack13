@@ -200,5 +200,7 @@ deployment and known limitations.
 
 **Verification**: backend 28 passed, actor 8 passed, web lint + `tsc --noEmit` clean.
 
-**Still missing (team)**: push to the public GitHub repo (after a full-history secret scan), Devpost submission, ASI:One / Cal Hacks
+**Pushed**: public repo https://github.com/kaixiangw564-max/calhack13 (before the first push the history was rewritten to drop an accidentally committed agent storage file, the full history was re-scanned: 17 commits, no secret values, and GitHub's initial README commit was merged without force-push).
+
+**Still missing (team)**: Devpost submission, ASI:One / Cal Hacks
 agent registration form, demo video; ASI:One UI acceptance of the main flow when the platform delivers messages again.
