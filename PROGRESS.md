@@ -8,7 +8,7 @@
 | 4 Custom Actor | ✅ (Store publishing pending: human) |
 | 5 Ingest | ✅ |
 | 6 Q&A endpoint | ✅ |
-| 7 Accessible website | ⏳ |
+| 7 Accessible website | ✅ |
 | 8 Navigator + Answer Agent | ⏳ |
 | 9 Crawler + Form Agent + Cards | ⏳ |
 | 10 Deployment | ⏳ |
@@ -107,3 +107,19 @@
 - Full backend suite: 28 passed
 
 **Still missing**: none for step 6. Known nit: the REAL ID answer can list related unnumbered PDFs (e.g. a translated fact sheet) as forms; to refine in the Form agent (step 9).
+
+## Step 7: Accessible website ✅
+
+**Done** (`web/`, Next.js 16.4.3 App Router + TypeScript + Tailwind 4):
+- `app/page.tsx`: header, a single question form, footer note (official sources only, no legal/medical advice)
+- `app/components/AskPanel.tsx`: textarea (Enter submits), answer-language picker, "Speak your question" (Web Speech recognition, auto-submits), "Get the steps", example questions; results in large type with per-step "View original" link, "Read aloud" button and "Checked on <date>"; "Read all steps aloud"; documents; official forms; not-found message with contact link; localized disclaimer
+- `app/api/ask/route.ts`: server-side proxy to FastAPI (`BACKEND_URL`)
+- `app/globals.css`: high-contrast tokens, 20px base, focus ring, skip link, reduced motion; `app/layout.tsx`: Atkinson Hyperlegible
+- Backend hardening found during testing: JSON mode for model output, 503 instead of 500 on unusable output
+
+**Verification** (backend on :8000, `npm run dev` on :3000, built-in browser):
+- Keyboard only: Tab focuses "Skip to main content" (visible focus ring); Enter, then Tab, lands on the question box (accessible name "What do you need to do?"); typed the question and pressed Enter; the status live region announced "Answer ready with 9 steps." and focus moved to the "Your steps" heading. Tab order continues "Read all steps aloud", "View original official page for step 1 (opens in a new tab)" (dpp-renewal, `target=_blank`), "Read aloud step 1"; Enter starts speech (`aria-pressed=true`, speechSynthesis speaking), Enter again stops it
+- axe-core 4.14 (wcag2a/2aa/21a/21aa/22aa + best-practice): **0 violations** on the initial page (42 passes) and on the results page (44 passes), 0 incomplete, including color-contrast
+- `npm run lint` clean, `tsc --noEmit` clean, `npm run build` succeeds; backend suite 28 passed
+
+**Still missing**: voice input not tested with a real microphone (no mic in the automated browser; the button is enabled when the API exists and falls back to typing otherwise).

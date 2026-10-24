@@ -39,14 +39,17 @@ def chat(
     max_tokens: int = 1200,
     model: str | None = None,
     effort: str | None = None,
+    json_mode: bool = False,
 ) -> str:
     """Plain chat completion; returns the assistant text."""
+    extra = {"response_format": {"type": "json_object"}} if json_mode else {}
     resp = client().chat.completions.create(
         model=model or chat_model(),
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
         reasoning_effort=effort or reasoning_effort(),
+        **extra,
     )
     choice = resp.choices[0]
     if not choice.message.content and choice.finish_reason == "length":
@@ -55,9 +58,13 @@ def chat(
 
 
 def chat_json(messages: list[dict], **kw) -> dict:
-    """Chat completion expected to return a JSON object. Tolerates ```json fences and surrounding prose."""
-    text = chat(messages, **kw)
+    """Chat completion that must return a JSON object.
+
+    Uses JSON mode (response_format=json_object), which stops the model from emitting invalid JSON such as
+    unescaped quotes inside non-English text; still tolerates ```json fences and surrounding prose.
+    """
+    text = chat(messages, json_mode=True, **kw)
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if not match:
         raise ValueError(f"LLM did not return JSON: {text[:200]!r}")
-    return json.loads(match.group(0))
+    return json.loads(match.group(0))  # json.JSONDecodeError is a ValueError

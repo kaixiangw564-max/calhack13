@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* High-contrast palette. Every text/background pair below meets WCAG AA (most meet AAA):
+   ink #111111 on paper #ffffff = 18.9:1, muted #3d3d3d on paper = 11.0:1,
+   white on primary #0b3d91 = 10.4:1, primary on paper = 10.4:1, ink on panel #f2f4f8 = 17.3:1. */
+:root {
+  --paper: #ffffff;
+  --panel: #f2f4f8;
+  --ink: #111111;
+  --muted: #3d3d3d;
+  --primary: #0b3d91;
+  --primary-hover: #072a66;
+  --focus: #ffbf00;
+  --danger: #8a1c1c;
+  --border: #5a5a5a;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-danger: var(--danger);
+  --color-line: var(--border);
+  --font-sans: var(--font-hyperlegible), Arial, Helvetica, sans-serif;
+}
+
+html {
+  font-size: 125%; /* 20px base: large text by default, still scales with browser zoom */
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+/* Thick, high-visibility focus ring on every interactive element. */
+:focus-visible {
+  outline: 4px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 7px var(--ink);
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 10;
+  background: var(--primary);
+  color: #ffffff;
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

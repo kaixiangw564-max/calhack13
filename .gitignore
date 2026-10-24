@@ -31,3 +31,6 @@ agents/*.json.keys
 Thumbs.db
 .idea/
 .vscode/
+
+# Local Claude Code / editor launch config (absolute paths)
+.claude/

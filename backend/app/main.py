@@ -31,7 +31,11 @@ def health() -> dict:
 @app.post("/ask")
 def ask(req: AskRequest) -> dict:
     """{steps: [{text, source_url, crawled_at}], documents, forms, not_found, disclaimer}."""
-    return answer.ask(req.question, req.language, req.site)
+    try:
+        return answer.ask(req.question, req.language, req.site)
+    except ValueError as exc:  # model output unusable after retry
+        log.warning("ask failed: %s", exc)
+        raise HTTPException(status_code=503, detail="The answer could not be prepared. Please try again.")
 
 
 @app.post("/crawl")
