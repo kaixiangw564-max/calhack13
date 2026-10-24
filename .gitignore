@@ -1,0 +1,33 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Apify local storage
+actor/storage/
+storage/
+apify_storage/
+
+# Node / Next.js
+node_modules/
+web/.next/
+web/out/
+.vercel/
+
+# Agent runtime state
+*.db
+agents/*.json.keys
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
