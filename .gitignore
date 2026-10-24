@@ -34,3 +34,6 @@ Thumbs.db
 
 # Local Claude Code / editor launch config (absolute paths)
 .claude/
+
+# uAgents runtime storage (per-conversation memory)
+*_data.json
