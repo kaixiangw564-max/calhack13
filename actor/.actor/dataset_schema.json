@@ -1,7 +1,66 @@
 {
     "$schema": "https://apify.com/schemas/v1/dataset.ide.json",
     "actorSpecification": 1,
-    "fields": {},
+    "fields": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["site", "url", "title", "service", "steps_raw", "required_documents", "forms", "locations", "fees", "crawled_at"],
+        "properties": {
+            "site": { "type": "string", "description": "Site domain without www, e.g. dmv.ca.gov." },
+            "url": { "type": "string", "description": "Official source page URL." },
+            "title": { "type": "string", "description": "Page title (the page's h1)." },
+            "service": { "type": "string", "description": "Service name: the page title for page-level records, or the section heading for \"how to\" section records." },
+            "steps_raw": { "type": "string", "description": "Official step-by-step text from the page or section, verbatim (truncated to 6000 characters)." },
+            "required_documents": {
+                "type": "array",
+                "description": "Required documents and actions listed in the official text.",
+                "items": { "type": "string" }
+            },
+            "forms": {
+                "type": "array",
+                "description": "Forms linked from the page or section.",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "required": ["name", "number", "url", "fields"],
+                    "properties": {
+                        "name": { "type": "string", "description": "Form name from the link text, e.g. Application for Disabled Person Placard or Plates (REG 195)." },
+                        "number": { "type": ["string", "null"], "description": "Form number such as REG 195, or null when none is found." },
+                        "url": { "type": "string", "description": "Official form (PDF) URL." },
+                        "fields": {
+                            "type": "array",
+                            "description": "Fillable field labels extracted from the PDF; empty when not available.",
+                            "items": { "type": "string" }
+                        },
+                        "pdf_status": {
+                            "type": "string",
+                            "description": "Result of the PDF fetch: parsed, disallowed_by_robots_txt, skipped_limit, too_large, not_pdf:<http status>, or fetch_error:<error type>. Absent when extractPdfFields is false."
+                        },
+                        "pdf_pages": { "type": "integer", "description": "Number of PDF pages. Present when the PDF was downloaded." },
+                        "description": { "type": "string", "description": "First-page text of the PDF (up to 1500 characters). Present when the PDF was downloaded." },
+                        "pdf_error": { "type": "string", "description": "Exception type when the downloaded PDF could not be parsed." }
+                    }
+                }
+            },
+            "locations": {
+                "type": "array",
+                "description": "Mailing addresses and office-locator links found in the official text.",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "required": ["name", "address", "hours"],
+                    "properties": {
+                        "name": { "type": "string", "description": "Label, e.g. the \"Mail to\" heading or the link text." },
+                        "address": { "type": "string", "description": "Postal address (lines separated by newlines), or empty for locator links." },
+                        "hours": { "type": "string", "description": "Opening hours when stated; usually empty." },
+                        "url": { "type": "string", "description": "Office-locator page URL (only for locator links)." }
+                    }
+                }
+            },
+            "fees": { "type": "string", "description": "Fee-related sentences from the official text; empty when none." },
+            "crawled_at": { "type": "string", "description": "When the page was crawled, ISO 8601 UTC, e.g. 2026-10-24T06:20:00Z." }
+        }
+    },
     "views": {
         "overview": {
             "title": "Service records",

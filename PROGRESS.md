@@ -68,4 +68,6 @@
 
 **Earlier attempts** (kept for the record): a 150-page BFS from the home page succeeded but missed the main placard page; a 400-page BFS TIMED-OUT at 30 minutes because pypdf blocked the event loop. Fixed by threaded PDF parsing plus the WCC-to-Extractor pipeline.
 
+**Output schema (for Store publication)**: added `.actor/output_schema.json` (`results` -> default dataset items) and a field-level JSON Schema in `dataset_schema.json`; validated with the CLI's official validators (actor/output/dataset) and AJV against all 257 platform items + fixture items. Build **0.1.4** SUCCEEDED; no Actor run started (run count 3 before and after push).
+
 **Still missing (human)**: publish the Actor publicly on Apify Store (Console → Actor → Publication). Known small issue: PDFs over 15 MB are fully downloaded before being marked `too_large` (2 files).

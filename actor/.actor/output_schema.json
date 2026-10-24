@@ -1,0 +1,14 @@
+{
+    "$schema": "https://apify.com/schemas/v1/output.ide.json",
+    "actorOutputSchemaVersion": 1,
+    "title": "PlainPath Gov Extractor output",
+    "description": "Structured, citeable service records extracted from public government websites. The full per-field structure is defined in dataset_schema.json.",
+    "properties": {
+        "results": {
+            "type": "string",
+            "title": "Service records",
+            "description": "One item per government service, stored in the default dataset. Each item has: site, url (source page), title (page title), service (service name), steps_raw (official step-by-step text), required_documents (list of strings), forms (list of {name, number, url, fields, pdf_status, pdf_pages, description, pdf_error}), locations (list of {name, address, hours, url}), fees (fee sentences), and crawled_at (ISO 8601 UTC timestamp).",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        }
+    }
+}
